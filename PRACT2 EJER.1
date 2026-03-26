@@ -1,0 +1,67 @@
+import multiprocessing
+import time
+import random
+
+
+
+
+def Productor(Memoria: multiprocessing.Array, Semaforo: multiprocessing.Semaphore, Total: int) -> None:
+    """Escribe valores aleatorios en memoria compartida protegida por semáforo.
+
+
+    Args:
+        Memoria: Array compartido entre procesos.
+        Semaforo: Sdoemáforo binario para exclusión mutua.
+        Total: Cantidad de valores a escribir.
+    """
+    for I in range(Total):
+        Valor = random.randint(1, 100)
+        Semaforo.acquire()          # wait(S)
+        Memoria[I] = Valor
+        print(f"  Productor escribió: {Valor} en posición {I}")
+        Semaforo.release()          # signal(S)
+        time.sleep(0.15)
+
+
+
+
+def Consumidor(Memoria: multiprocessing.Array, Semaforo: multiprocessing.Semaphore, Total: int) -> None:
+    """Lee valores de memoria compartida protegida por semáforo.
+
+
+    Args:
+        Memoria: Array compartido entre procesos.
+        Semaforo: Semáforo binario para exclusión mutua.
+        Total: Cantidad de valores a leer.
+    """
+    for I in range(Total):
+        time.sleep(0.2)
+        Semaforo.acquire()          # wait(S)
+        print(f"  Consumidor leyó:   {Memoria[I]} de posición {I}")
+        Semaforo.release()          # signal(S)
+
+
+
+
+if __name__ == "__main__":
+
+
+    Total    = 5
+    Memoria  = multiprocessing.Array("i", [0] * Total)
+    Semaforo = multiprocessing.Semaphore(1)
+
+
+    print("=" * 50)
+    print("Con semáforo (acceso ordenado)")
+    print("=" * 50)
+
+
+    ProcProductor  = multiprocessing.Process(target=Productor,  args=(Memoria, Semaforo, Total))
+    ProcConsumidor = multiprocessing.Process(target=Consumidor, args=(Memoria, Semaforo, Total))
+
+
+    ProcProductor.start()
+    ProcConsumidor.start()
+    ProcProductor.join()
+    ProcConsumidor.join()
+
